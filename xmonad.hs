@@ -1,57 +1,34 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+import qualified Data.Map as M
+import Data.Monoid ((<>))
+import Graphics.X11.ExtraTypes.XF86
 import XMonad
---import XMonad.Core (LayoutClass)
-import qualified XMonad.StackSet as StackSet
 
 -- XMonad contrib packages
-import qualified XMonad.Actions.Navigation2D as Nav
-import qualified XMonad.Hooks.DynamicLog as Log
-import XMonad.Layout.LayoutScreens
-import XMonad.Layout.TwoPane
-import qualified XMonad.Util.EZConfig as EZ
+import XMonad.Hooks.DynamicLog (xmobar)
+import XMonad.Hooks.EwmhDesktops (ewmh)
 
--- TODO fix manual tiling
-data Manual a = Manual deriving (Show, Read)
-
-instance LayoutClass Manual Window where
-  doLayout _layout (Rectangle x y w h) stack = do
-    conf <- ask
-    let halfWidth = w `div` 2
-    return
-      ( [ (theRoot conf, Rectangle x y halfWidth h)
-        , (StackSet.focus stack, Rectangle (x + fromIntegral halfWidth) y halfWidth h)
-        ]
-      , Nothing
-      )
-  description _ = "Manual"
+-- TODO: use createNewWindow from XMonad.Util.XUtils to make a manual layout
 
 main :: IO ()
 main = do
   let
     conf = def
       { terminal = "SHELL=/usr/bin/fish urxvt"
-      , modMask = mod4Mask -- use Super instead of alt as a mod key
-      --, layoutHook = Full ||| Manual
+      , modMask = mod4Mask
+      , layoutHook = Full ||| Tall 1 (3/100) (1/2)
+      , keys = myKeys <> keys def
       }
-    navConf =
-      Nav.navigation2DP def ("k", "h", "j", "l")
-        [ ("M-", Nav.windowGo)
-        , ("M-S-", Nav.windowSwap)
-        ]
-        True
-    keybindings =
-      [ ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5")
-      , ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5")
-      , ("<XF86AudioRaiseVolume>", spawn "amixer -D pulse sset Master 4%+")
-      , ("<XF86AudioLowerVolume>", spawn "amixer -D pulse sset Master 4%-")
-      , ("<XF86AudioMute>", spawn "amixer -D pulse sset Master toggle")
-      , ("S-<Print>", spawn "~/usr/bin/screenshot")
-      , ("M-g", spawn "skippy-xd")
-      , ("M-p", spawn "rofi -show combi")
-      , ("M-<Return>", spawn $ terminal conf)
-      , ("M-S-<Space>", layoutSplitScreen 2 (TwoPane 0.5 0.5)) -- TODO: make this use bsp instead of twopane
-      , ("M-C-S-<Space>", rescreen)
-      ]
+  xmobar (ewmh conf) >>= xmonad
 
-  modifiedConf <- Log.xmobar $ navConf $ EZ.additionalKeysP conf keybindings
-  xmonad modifiedConf
+myKeys :: XConfig Layout -> M.Map (ButtonMask, KeySym) (X ())
+myKeys XConfig {XMonad.modMask = m} = M.fromList
+      [ ((0, xF86XK_MonBrightnessUp), spawn "xbacklight -inc 5")
+      , ((0, xF86XK_MonBrightnessDown), spawn "xbacklight -dec 5")
+      , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -D pulse sset Master 4%+")
+      , ((0, xF86XK_AudioLowerVolume), spawn "amixer -D pulse sset Master 4%-")
+      , ((0, xF86XK_AudioMute), spawn "amixer -D pulse sset Master toggle")
+      , ((s, xK_Print), spawn "~/usr/bin/screenshot")
+      , ((m, xK_g), spawn "skippy-xd")
+      , ((m, xK_p), spawn "rofi -show combi")
+      ]
+      where s = shiftMask
