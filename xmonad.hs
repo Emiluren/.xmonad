@@ -27,7 +27,7 @@ myKeys XConfig {XMonad.modMask = m} = M.fromList
       , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -D pulse sset Master 4%+")
       , ((0, xF86XK_AudioLowerVolume), spawn "amixer -D pulse sset Master 4%-")
       , ((0, xF86XK_AudioMute), spawn "amixer -D pulse sset Master toggle")
-      , ((s, xK_Print), spawn "~/usr/bin/screenshot")
+      , ((s, xK_Print), spawn "~/bin/screenshot")
       , ((m, xK_g), spawn "skippy-xd")
       , ((m, xK_p), spawn "rofi -show combi")
       ]
