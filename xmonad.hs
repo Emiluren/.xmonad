@@ -36,7 +36,7 @@ main = xmonad =<< xmobar (ewmh . docks $ conf) where
 -- see: https://mail.haskell.org/pipermail/xmonad/2017-March/015224.html
 -- and: https://github.com/xmonad/xmonad-contrib/pull/109
 addNETSupported :: Atom -> X ()
-addNETSupported x   = withDisplay $ \dpy -> do
+addNETSupported x = withDisplay $ \dpy -> do
   r               <- asks theRoot
   a_NET_SUPPORTED <- getAtom "_NET_SUPPORTED"
   a               <- getAtom "ATOM"
@@ -49,7 +49,6 @@ addEWMHFullscreen :: X ()
 addEWMHFullscreen = do
     wms <- getAtom "_NET_WM_STATE"
     wfs <- getAtom "_NET_WM_STATE_FULLSCREEN"
-    -- liftIO $ appendFile "/tmp/xm.log" $ "enabling fullscreen"
     mapM_ addNETSupported [wms, wfs]
 
 -- TODO: Maybe add super+? to show all bindings
