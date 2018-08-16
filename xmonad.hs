@@ -51,7 +51,6 @@ addEWMHFullscreen = do
     wfs <- getAtom "_NET_WM_STATE_FULLSCREEN"
     mapM_ addNETSupported [wms, wfs]
 
--- TODO: Maybe add super+? to show all bindings
 myKeys :: XConfig l -> M.Map (ButtonMask, KeySym) (X ())
 myKeys _ = M.fromList
   -- Media keys
@@ -78,7 +77,6 @@ myKeys _ = M.fromList
   , ((m .|. a, xK_l), sendEnclosingMessage $ Zoom 1.2) -- Expand column
   , ((m .|. a, xK_j), sendMessage . Zoom $ 5/6) -- Shrink window
   , ((m .|. a, xK_k), sendMessage $ Zoom 1.2) -- Expand window
-  , ((m, xK_space), sendMessage NextLayout)
   ]
   where
     m = mod4Mask
