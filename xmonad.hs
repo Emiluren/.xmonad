@@ -1,26 +1,56 @@
+import Control.Monad (when, join)
 import qualified Data.Map as M
+import Data.Maybe (maybeToList)
 import Data.Monoid ((<>))
 import Graphics.X11.ExtraTypes.XF86
 import XMonad
 
 -- XMonad contrib packages
 import XMonad.Hooks.DynamicLog (xmobar)
-import XMonad.Hooks.EwmhDesktops (ewmh)
+import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
 import XMonad.Hooks.ManageDocks (avoidStruts, docks)
 import qualified XMonad.Layout.Groups as G
 import XMonad.Layout.Groups.Examples (zoomRowG)
 import qualified XMonad.Layout.Groups.Helpers as GH
+import XMonad.Layout.NoBorders (smartBorders)
+import XMonad.Layout.Renamed
 import XMonad.Layout.Tabbed (simpleTabbed)
 import XMonad.Layout.ZoomRow (zoomRow, ZoomMessage(Zoom))
 
 main :: IO ()
 main = xmonad =<< xmobar (ewmh . docks $ conf) where
   conf = def
-    { layoutHook = avoidStruts $ G.group (Mirror zoomRow ||| simpleTabbed) zoomRowG
+    { layoutHook = myLayout
     , modMask = mod4Mask
     , keys = myKeys <> keys def
     , workspaces = ["code", "web"] ++ map show [3 .. 9 :: Int]
+    , handleEventHook = fullscreenEventHook
+    , startupHook = addEWMHFullscreen
     }
+  myLayout = smartBorders (avoidStruts collumnsOfTabs)
+  collumnsOfTabs =
+    renamed [CutWordsRight 2] $
+      G.group (simpleTabbed ||| Mirror zoomRow) zoomRowG
+
+-- Advertise fullscreen support
+-- see: https://mail.haskell.org/pipermail/xmonad/2017-March/015224.html
+-- and: https://github.com/xmonad/xmonad-contrib/pull/109
+addNETSupported :: Atom -> X ()
+addNETSupported x   = withDisplay $ \dpy -> do
+    r               <- asks theRoot
+    a_NET_SUPPORTED <- getAtom "_NET_SUPPORTED"
+    a               <- getAtom "ATOM"
+    liftIO $ do
+        sup <- join . maybeToList <$> getWindowProperty32 dpy a_NET_SUPPORTED r
+        when (fromIntegral x `notElem` sup) $
+          changeProperty32 dpy r a_NET_SUPPORTED a propModeAppend [fromIntegral x]
+
+addEWMHFullscreen :: X ()
+addEWMHFullscreen = do
+    wms <- getAtom "_NET_WM_STATE"
+    wfs <- getAtom "_NET_WM_STATE_FULLSCREEN"
+    -- liftIO $ appendFile "/tmp/xm.log" $ "enabling fullscreen"
+    mapM_ addNETSupported [wms, wfs]
 
 -- TODO: Maybe add super+? to show all bindings
 myKeys :: XConfig l -> M.Map (ButtonMask, KeySym) (X ())
