@@ -1,6 +1,6 @@
-import Control.Monad (when, join)
+import Control.Monad (when)
+import Data.Foldable (concat)
 import qualified Data.Map as M
-import Data.Maybe (maybeToList)
 import Data.Monoid ((<>))
 import Graphics.X11.ExtraTypes.XF86
 import XMonad
@@ -37,13 +37,13 @@ main = xmonad =<< xmobar (ewmh . docks $ conf) where
 -- and: https://github.com/xmonad/xmonad-contrib/pull/109
 addNETSupported :: Atom -> X ()
 addNETSupported x   = withDisplay $ \dpy -> do
-    r               <- asks theRoot
-    a_NET_SUPPORTED <- getAtom "_NET_SUPPORTED"
-    a               <- getAtom "ATOM"
-    liftIO $ do
-        sup <- join . maybeToList <$> getWindowProperty32 dpy a_NET_SUPPORTED r
-        when (fromIntegral x `notElem` sup) $
-          changeProperty32 dpy r a_NET_SUPPORTED a propModeAppend [fromIntegral x]
+  r               <- asks theRoot
+  a_NET_SUPPORTED <- getAtom "_NET_SUPPORTED"
+  a               <- getAtom "ATOM"
+  liftIO $ do
+    sup <- concat <$> getWindowProperty32 dpy a_NET_SUPPORTED r
+    when (fromIntegral x `notElem` sup) $
+      changeProperty32 dpy r a_NET_SUPPORTED a propModeAppend [fromIntegral x]
 
 addEWMHFullscreen :: X ()
 addEWMHFullscreen = do
