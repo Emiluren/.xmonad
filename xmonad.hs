@@ -1,17 +1,20 @@
+{-# LANGUAGE FlexibleContexts #-}
 import Control.Monad (when)
 import Data.Foldable (concat)
 import qualified Data.Map as M
 import Data.Monoid ((<>))
 import Graphics.X11.ExtraTypes.XF86
 import XMonad
+import XMonad.Core (LayoutClass)
 
 -- XMonad contrib packages
-import XMonad.Hooks.DynamicLog (xmobar)
+import XMonad.Hooks.DynamicLog (statusBar)
 import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
-import XMonad.Hooks.ManageDocks (avoidStruts, docks)
+import XMonad.Hooks.ManageDocks (avoidStruts, AvoidStruts, docks)
 import qualified XMonad.Layout.Groups as G
 import XMonad.Layout.Groups.Examples (zoomRowG)
 import qualified XMonad.Layout.Groups.Helpers as GH
+import XMonad.Layout.LayoutModifier (ModifiedLayout)
 import XMonad.Layout.NoBorders (smartBorders)
 import XMonad.Layout.Renamed
 import XMonad.Layout.Tabbed (simpleTabbed)
@@ -23,7 +26,6 @@ main = xmonad =<< xmobar (ewmh . docks $ conf) where
     { layoutHook = myLayout
     , modMask = mod4Mask
     , keys = myKeys <> keys def
-    , workspaces = ["code", "web"] ++ map show [3 .. 9 :: Int]
     , handleEventHook = fullscreenEventHook
     , startupHook = addEWMHFullscreen
     }
@@ -31,6 +33,9 @@ main = xmonad =<< xmobar (ewmh . docks $ conf) where
   collumnsOfTabs =
     renamed [CutWordsRight 2] $
       G.group (simpleTabbed ||| Mirror zoomRow) zoomRowG
+
+xmobar :: LayoutClass l Window => XConfig l -> IO (XConfig (ModifiedLayout AvoidStruts l))
+xmobar = statusBar "xmobar" def (\_ -> (,) mod4Mask xK_b)
 
 -- Advertise fullscreen support
 -- see: https://mail.haskell.org/pipermail/xmonad/2017-March/015224.html
@@ -47,9 +52,9 @@ addNETSupported x = withDisplay $ \dpy -> do
 
 addEWMHFullscreen :: X ()
 addEWMHFullscreen = do
-    wms <- getAtom "_NET_WM_STATE"
-    wfs <- getAtom "_NET_WM_STATE_FULLSCREEN"
-    mapM_ addNETSupported [wms, wfs]
+  wms <- getAtom "_NET_WM_STATE"
+  wfs <- getAtom "_NET_WM_STATE_FULLSCREEN"
+  mapM_ addNETSupported [wms, wfs]
 
 myKeys :: XConfig l -> M.Map (ButtonMask, KeySym) (X ())
 myKeys _ = M.fromList
